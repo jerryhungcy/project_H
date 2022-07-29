@@ -17,12 +17,12 @@ ScriptData = {"Rfiles":["BCI", "FSI", "RAI", "Shadow Rate"],
        "FSI":["Brazil", "China", "Indonesia", "Japan", "Korea", "Malaysia", "S. Africa", "Thailand", "USA"],
        "RAI":["China", "USA"],
        "Shadow Rate":["China"],
-       "BCIAustralia":["AUSBCI.R", ["AusBCI.xlsx"]],
-       "BCIBrazil":["BRABCI.R", ["BrazilBCI.xlsx"]],
+       "BCIAustralia":["AUSBCI.gau", ["AusBCI.xlsx"]],
+       "BCIBrazil":["BRABCI.gau", ["BrazilBCI.xlsx"]],
        "BCIChina":["CBCI.R", ["MonthlyChinaBCI.xlsx","DailyChinaBCI.xlsx"]],
-       "BCIJapan":["JAPBCI.R", ["JapanBCI.xlsx"]],
-       "BCIKorea":["KOR.R", ["KoreaBCI.xlsx"]],
-       "BCITurkey":["TURBCI.R", ["TurkeyBCI.xlsx"]],
+       "BCIJapan":["JAPBCI.gau", ["JapanBCI.xlsx"]],
+       "BCIKorea":["KOR.gau", ["KoreaBCI.xlsx"]],
+       "BCITurkey":["TURBCI.gau", ["TurkeyBCI.xlsx"]],
        "BCIUSA":["USBCI.R", ["USDailyBCI.xlsx"]],
        "FSIChina":["CFSI.R", ["ChinaFSI.xlsx"]],
        "FSIUSA":["USFSI.R", ["USFSI.xlsx"]],
@@ -35,10 +35,14 @@ ScriptData = {"Rfiles":["BCI", "FSI", "RAI", "Shadow Rate"],
        "FSIThailand":["THAFSI.R", ["THAFSI.xlsx"]],
        "RAIChina":["CRAI.R", ["ChinaRAI.xlsx"]],
        "RAIUSA":["USRAI.R", ["USRAI.xlsx"]],
-       "Shadow RateChina":["Shadow Rate.R", ["Daily Shadow Rate.xlsx", "ShadowRate-1DAheadForecast.xlsx"]]
+       "Shadow RateChina":["Shadow Rate.R", ["\"Daily Shadow Rate.xlsx\"", "\"ShadowRate-1DAheadForecast.xlsx\""]]
 }
 
-R_path = "C:/Program Files/R/R-4.2.0/bin/x64/RScript.exe"
+#R_path = "C:/Program Files/R/R-4.2.0/bin/x64/RScript.exe"
+
+R_path = "C:/Program Files/R/R-3.6.1/bin/x64/RScript.exe"
+G_path = "C:/gauss19/gauss.exe"
+G_file_path = "C:/Users/chueng/Google Drive/PRC1/"
 
 
 class App:
@@ -68,6 +72,9 @@ class App:
         self.btn.pack(side = 'left', anchor= tk.NW, padx= 10, pady= 2)
 
         self.cbScript.bind('<<ComboboxSelected>>', self.set_cbContry)
+
+        self.current_dir = os.getcwd().replace('\\','/')
+        
     
         
 
@@ -94,18 +101,30 @@ class App:
         #R_dst = "{} {}.r".format(self.cbContry.get(), self.cbScript.get())
         d =  self.cbScript.get() + self.cbContry.get()
         R_dst = ScriptData[d][0]
+        print(R_dst)
         t = "{} {}\n{}".format(self.cbContry.get(), self.cbScript.get(),R_dst)
         btn = tk.Button(self.f2, state = 'disable', text = t+"\nloading", fg = 'green', font=("Arial", 12,"bold"), width= 15, command = lambda:self.showExcel(ScriptData[d][1]))
         btn.pack(side = 'top', padx= 10, pady= 2)
         self.f2.update_idletasks()
+        
         try:
-            p = subprocess.run([R_path, R_dst,] , shell = True, check = True)
+            if d == "BCIChina":
+                p = subprocess.run([R_path, "CBCI.R", "&&", G_path, G_file_path+"CBCI_D.gau", "&&", G_path, G_file_path+"CBCI_M.gau",] , shell = True, check = True)
+            elif d == "BCIUSA":
+                p = subprocess.run([R_path, "USBCI.R", "&&", G_path, G_file_path+"USBCI.gau", ] , shell = True, check = True)
+            elif self.cbScript.get() == "BCI":
+                G_file = G_file_path + R_dst
+                p = subprocess.run([G_path, G_file, ] , shell = True, check = True)
+                #p = subprocess.run([R_path, R_dst, "&&", R_path, "shadow Rate.R", ] , shell = True, check = True)
+            else :
+                p = subprocess.run([R_path, R_dst,] , shell = True, check = True)
             if p.stdout == None:
-                btn['text'] = t +'\nfinish'
+                btn['text'] = t +'\nfinished'
                 btn['state'] = 'normal'
         except subprocess.CalledProcessError:
             print("something went wrong")
-            btn['text'] = t + '\nerror'
+            btn['text'] = t + '\nfailed'
+            btn['fg'] = 'red'
                   
        
 
