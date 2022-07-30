@@ -109,7 +109,7 @@ class App:
         
         try:
             if d == "BCIChina":
-                p = subprocess.run([R_path, "CBCI.R", "&&", G_path, G_file_path+"CBCI_D.gau", "&&", G_path, G_file_path+"CBCI_M.gau",] , shell = True, check = True)
+                p = subprocess.run([R_path, "CBCI.R", "&&", G_path, G_file_path+"CBCI_M.gau", "&&", G_path, G_file_path+"CBCI_D.gau",] , shell = True, check = True)
             elif d == "BCIUSA":
                 p = subprocess.run([R_path, "USBCI.R", "&&", G_path, G_file_path+"USBCI.gau", ] , shell = True, check = True)
             elif self.cbScript.get() == "BCI":
