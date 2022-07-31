@@ -6,6 +6,9 @@ import tkinter.ttk as ttk
 import subprocess
 import os
 
+from openpyxl import load_workbook
+
+
 ScriptData_2 =    {"Rfiles" : ["BCI", "FSI", "RAI", "shadow rate"],
                 "BCI":[ "Australia","Brazil", "China", "japane", "Korean", "Turkey", "USA"],
                 "FSI":["Brazil", "China", "Indonesia", "Japan", "Korean", "Malaysia",  "South Africa", "Thailand", "USA" ],
@@ -44,6 +47,15 @@ R_path = "C:/Program Files/R/R-3.6.1/bin/x64/RScript.exe"
 G_path = "C:/gauss19/gauss.exe"
 G_file_path = "C:/Users/chueng/Google Drive/PRC1/"
 
+def getExcelSize(file):
+    workbook = load_workbook(file)
+    sheet = workbook.worksheets[0]
+    return (sheet.max_row, sheet.max_column)
+
+def compareExcel(row, column, file):
+    workbook = load_workbook(file)
+    sheet = workbook.worksheets[0]
+    return (sheet.max_row == row ) and (sheet.max_column == column)
 
 class App:
     def __init__(self, win):
@@ -87,11 +99,6 @@ class App:
         self.win.mainloop()
 
     def showExcel(self, files):
-        '''df = pd.read_excel(filename)
-        f = Figure(figsize=(9,5), dpi=100)
-        ax = f.add_subplot(111)
-        df.plot(kind="line",ax=ax)
-        '''
         for f in files:
             print(f)
             os.system("start EXCEL.EXE {}".format(f))
@@ -108,21 +115,41 @@ class App:
         self.f2.update_idletasks()
         
         try:
-            if d == "BCIChina":
-                p = subprocess.run([R_path, "CBCI.R", "&&", G_path, G_file_path+"CBCI_M.gau", "&&", G_path, G_file_path+"CBCI_D.gau",] , shell = True, check = True)
-            elif d == "BCIUSA":
-                p = subprocess.run([R_path, "USBCI.R", "&&", G_path, G_file_path+"USBCI.gau", ] , shell = True, check = True)
-            elif self.cbScript.get() == "BCI":
-                G_file = G_file_path + R_dst
-                p = subprocess.run([G_path, G_file, ] , shell = True, check = True)
-                #p = subprocess.run([R_path, R_dst, "&&", R_path, "shadow Rate.R", ] , shell = True, check = True)
+            if self.cbScript.get() == "BCI":
+                if d == "BCIChina":
+                    row , col = getExcelSize(ScriptData[d][1][0])
+                    #p = subprocess.run([R_path, "CBCI.R", "&&", G_path, G_file_path+"CBCI_M.gau", "&&", G_path, G_file_path+"CBCI_D.gau",] , shell = True, check = True)
+                    p = subprocess.run([R_path, "CBCI.R", "&&", G_path, G_file_path+"CBCI_M.gau", ] , shell = True, check = True)
+                    if p.stdout == None and compareExcel(row, col, ScriptData[d][1][0]) == True:
+                        raise subprocess.SubprocessError()
+                    row , col = getExcelSize(ScriptData[d][1][1])
+                    p = subprocess.run([G_path, G_file_path+"CBCI_D.gau", ] , shell = True, check = True)
+                    if p.stdout == None and compareExcel(row, col, ScriptData[d][1][1]) == True:
+                        raise subprocess.SubprocessError()
+
+                elif d == "BCIUSA":
+                    row , col = getExcelSize(ScriptData[d][1][0])
+                    p = subprocess.run([R_path, "USBCI.R", "&&", G_path, G_file_path+"USBCI.gau", ] , shell = True, check = True)
+                    if p.stdout == None and compareExcel(row, col, ScriptData[d][1][0]) == True:
+                        raise subprocess.SubprocessError()
+                else:
+                    row , col = getExcelSize(ScriptData[d][1][0])
+                    G_file = G_file_path + R_dst
+                    p = subprocess.run([G_path, G_file, ] , shell = True, check = True)
+                    #p = subprocess.run([R_path, R_dst, "&&", R_path, "shadow Rate.R", ] , shell = True, check = True)
+                    if p.stdout == None and compareExcel(row, col, ScriptData[d][1][0]) == True:
+                        raise subprocess.SubprocessError()
             else :
                 p = subprocess.run([R_path, R_dst,] , shell = True, check = True)
-            if p.stdout == None:
-                btn['text'] = t +'\nfinished'
-                btn['state'] = 'normal'
+                if p.stdout == None:
+                    btn['text'] = t +'\nfinished'
+                    btn['state'] = 'normal'
         except subprocess.CalledProcessError:
             print("something went wrong")
+            btn['text'] = t + '\nfailed'
+            btn['fg'] = 'red'
+        except subprocess.SubprocessError:
+            print('Excel did not update')
             btn['text'] = t + '\nfailed'
             btn['fg'] = 'red'
                   
